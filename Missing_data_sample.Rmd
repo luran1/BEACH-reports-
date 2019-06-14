@@ -7,7 +7,7 @@ output: html_document
 
 Participants that will be looked at:
 
-```{r echo=FALSE}
+```{r echo=FALSE, results='hide'}
 
 library(knitr)
 library(tidyr)
@@ -250,3 +250,10 @@ kable(breastSurgury)
 
 
 ```
+
+
+
+
+
+
+
