@@ -1,0 +1,252 @@
+---
+title: "Sample Missing Data Report"
+author: "Luran M."
+date: "May 31, 2019"
+output: html_document
+---
+
+Participants that will be looked at:
+
+```{r echo=FALSE}
+
+library(knitr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(keyringr)
+library(redcapAPI)
+library(REDCapR)
+library(lubridate)
+
+#Create path to and api link to RedCaps
+# # https://cran.r-project.org/web/packages/keyringr/vignettes/Avoiding_plain_text_passwords_in_R_with_keyringr.html
+credential_label <- "beach_api"
+credential_path <- paste(Sys.getenv("USERPROFILE"), '\\DPAPI\\passwords\\', Sys.info()["nodename"], '\\', credential_label, '.txt', sep="")
+uri <- "https://redcap.ctsi.ufl.edu/redcap/api/"
+beach_token<-decrypt_dpapi_pw(credential_path)
+
+
+# Create connections
+rcon <- redcapConnection(url=uri, token=beach_token)
+
+# crc variables
+#fields <- exportFieldNames(rcon)
+#crc variables for 3rd trimester visit
+desired_fields_triHU=c("mom3t_delivery_location",
+                       "mom3t_breast_surg",
+                       "mom3t_baby_sex",
+                       "mom3t_prepreg_bmi",
+                       "infant_crc_wt_kg")
+# crc variables for the 2 week visit 
+desired_fields_2wkHU=c("mom2wk_delivery_date",
+                       "inf2wk_delivery_location",
+                       "inf2wk_sex",
+                       "mom2wk_baby_weight_pounds",
+                       "inf2wk_baby_weight_today")
+
+# combine desired fields and import test_id and redcap_event_name
+desired_fields_all=c(desired_fields_triHU,desired_fields_2wkHU,"test_id","redcap_event_name")
+
+# events to retain
+#exportEvents(rcon)
+events_to_retain  <- c("third_trimester_arm_1", "two_week_arm_1", "two_month_arm_1")
+
+# list of instruments
+#exportInstruments(rcon)
+Instruments_to_retain <- c("health_update_3rd_trimester_v5082518","clinical_health_update_2wk_v4_042218",
+                           "clinical_health_update_2mo_to_12mo_v3_022118","infant_feeding_questionnaire_2_weeks_v3_042218",
+                           "infant_feeding_questionnaire_2mo_to_12mo_v3_022118")
+
+# list of events
+#exportEvents(rcon)
+
+# list records
+#exportRecords(rcon)
+
+# export field names
+#exportFieldNames(rcon)
+
+# consented records
+consent.records.v1=c("BLS001A","BLS002A","BLS003A")
+
+# pull data
+ds_some_rows_v1 <- redcap_read(
+  batch_size=300,
+  records= consent.records.v1,
+  redcap_uri = uri, 
+  token      = beach_token, 
+  fields     = desired_fields_all,
+  events     = events_to_retain,
+  )$data
+
+# save data into the dat variable 
+dat=ds_some_rows_v1
+
+for( participant in consent.records.v1)
+  print(paste("Participant ",participant))
+```
+
+## Did mom tell us her BMI?
+  ###(Displaying participants that responded and response)
+***
+```{r echo=FALSE}
+
+
+momBmi <- dat%>%
+  select(test_id,redcap_event_name,mom3t_prepreg_bmi)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  filter(!is.na("mom3t_prepreg_bmi"))%>%
+  rename(BMI="mom3t_prepreg_bmi",participant=test_id,"visit type"=redcap_event_name)
+kable(momBmi)
+
+```
+
+
+## Which participant provided infant weight?
+  ###(includes instences of 3rd trimester and 2 week questionare)
+***
+
+```{r echo=FALSE}
+
+infantWeight1 <- dat%>%
+  select(test_id,mom2wk_baby_weight_pounds)%>%
+  arrange(test_id)%>%
+  filter(!is.na(mom2wk_baby_weight_pounds))%>%
+  rename(participant=test_id, "2-week infant weight(lb)"=mom2wk_baby_weight_pounds)
+infantWeight2 <- dat%>%
+  select(test_id,inf2wk_baby_weight_today)%>%
+  arrange(test_id)%>%
+  filter(!is.na(inf2wk_baby_weight_today))%>%
+  rename(participant=test_id,"2-week baby weight today"=inf2wk_baby_weight_today)
+iw<-full_join(infantWeight1,infantWeight2)
+kable(iw)
+
+```
+
+## Was delivery location told by participant?
+  ###(displays both 2-week response chart and if the question was answered in either questionare)
+***
+
+```{r echo=FALSE}
+
+
+#chart of Delivery location question at 3rd trimester   
+DeliveryLocation_tri <-dat%>%
+  select(test_id,redcap_event_name,mom3t_delivery_location)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name == "third_trimester_arm_1")
+
+
+#Talbe of participants who responsed to the question
+
+DeliveryLocation_tri_pop<-filter(DeliveryLocation_tri,!is.na(mom3t_delivery_location))
+
+#chart of Delivery location question at 2 week
+
+DeliveryLocation_wk <-dat%>%
+  select(test_id,redcap_event_name,inf2wk_delivery_location___1:inf2wk_delivery_location___5)%>%
+  arrange(test_id,redcap_event_name)%>%
+  rename("UFHealth"=inf2wk_delivery_location___1,
+         "North Florida Regional"=inf2wk_delivery_location___2,
+         "Birth & wellness Center of Gainesville"=inf2wk_delivery_location___3,
+         "other"=inf2wk_delivery_location___4,
+         "IDK"=inf2wk_delivery_location___5)%>%
+  filter(redcap_event_name == "two_week_arm_1")%>%
+  rename(participant=test_id,"visit type"=redcap_event_name)
+kable(DeliveryLocation_wk)
+#seperate variables and check for population 
+uf<-DeliveryLocation_wk%>%
+  select(participant,UFHealth)%>%
+  filter(UFHealth>0)%>%
+  select(participant)
+
+NF<-DeliveryLocation_wk%>%
+  select(participant,`North Florida Regional`)%>%
+  filter(`North Florida Regional`>0)%>%
+  select(participant)
+
+BWC<-DeliveryLocation_wk%>%
+  select(participant,`Birth & wellness Center of Gainesville`)%>%
+  filter(`Birth & wellness Center of Gainesville`>0)%>%
+  select(participant)
+
+Other<-DeliveryLocation_wk%>%
+  select(participant,`other`)%>%
+  filter(other>0)%>%
+  select(participant)
+
+idk<-DeliveryLocation_wk%>%
+  select(participant,`IDK`)%>%
+  filter(IDK>0)%>%
+  select(participant)
+
+#recombine variables and show distinct population 
+tm1<-dplyr::full_join(uf,NF,BWC,by="participant")
+tm2<-dplyr::full_join(idk,Other,by="participant")
+distinct(dplyr::full_join(tm1,tm2,by="participant"))
+
+```
+
+## do we know infant sex?
+  ###(3rd trimester questionare response, displays participants that responded)
+***
+
+```{r echo=FALSE}
+
+
+infantSex3t <- dat%>%
+  select(test_id,redcap_event_name,mom3t_baby_sex)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(!is.na(mom3t_baby_sex))%>%
+  rename(participant=test_id, "visit type"=redcap_event_name, "questionare response"=mom3t_baby_sex)
+kable(infantSex3t)
+
+```
+
+  ###(2-week questionare response, displays participants that responded)
+***
+
+```{r echo=FALSE}
+
+infantSex2wk <- dat%>%
+  select(test_id,redcap_event_name,inf2wk_sex)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(!is.na(inf2wk_sex))%>%
+  rename(participant=test_id, "visit type"=redcap_event_name, "questionare response"=inf2wk_sex)
+kable(infantSex2wk)
+
+```
+
+  ###(display participants that responded to the question at all)
+***
+
+```{r echo=FALSE}
+temp <-full_join(infantSex3t,infantSex2wk,by="participant")%>%
+  select(participant)
+
+babySexAns <- dat%>%
+  select(test_id)%>%
+  rename(participant=test_id)
+kable(distinct(dplyr::semi_join(babySexAns,temp)))
+
+
+```
+
+## Did participant undergo Breast surgery?
+  ###(3rd trimester questionare, displays only participants that responded and response)
+***
+
+```{r}
+breastSurgury <- dat%>%
+  select(test_id,redcap_event_name,mom3t_breast_surg)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  filter(!is.na(mom3t_breast_surg))%>%
+  rename(participant=test_id,"visit type"=redcap_event_name,"Breast Surgery"=mom3t_breast_surg)
+kable(breastSurgury)
+
+
+
+
+```
