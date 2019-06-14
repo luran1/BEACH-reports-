@@ -7,16 +7,16 @@ output: html_document
 
 Participants that will be looked at:
 
-```{r echo=FALSE, results='hide'}
+```{r echo=FALSE, results="hide"}
 
-library(knitr)
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-library(keyringr)
-library(redcapAPI)
-library(REDCapR)
-library(lubridate)
+library(knitr, warn.conflicts = F, quietly = T)
+library(tidyr, warn.conflicts = F, quietly = T)
+library(dplyr, warn.conflicts = F, quietly = T)
+library(ggplot2, warn.conflicts = F, quietly = T)
+library(keyringr, warn.conflicts = F, quietly = T)
+library(redcapAPI, warn.conflicts = F, quietly = T)
+library(REDCapR, warn.conflicts = F, quietly = T)
+library(lubridate, warn.conflicts = F, quietly = T)
 
 #Create path to and api link to RedCaps
 # # https://cran.r-project.org/web/packages/keyringr/vignettes/Avoiding_plain_text_passwords_in_R_with_keyringr.html
@@ -79,11 +79,16 @@ ds_some_rows_v1 <- redcap_read(
   events     = events_to_retain,
   )$data
 
+
+```
+
+```{r echo=FALSE}
 # save data into the dat variable 
 dat=ds_some_rows_v1
 
 for( participant in consent.records.v1)
   print(paste("Participant ",participant))
+
 ```
 
 ## Did mom tell us her BMI?
