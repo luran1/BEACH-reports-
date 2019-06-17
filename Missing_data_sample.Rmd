@@ -5,9 +5,9 @@ date: "May 31, 2019"
 output: html_document
 ---
 
-Participants that will be looked at:
+##Participants that will be looked at:
 
-```{r echo=FALSE, results="hide"}
+```{r echo=FALSE, results="hide", include=FALSE}
 
 library(knitr, warn.conflicts = F, quietly = T)
 library(tidyr, warn.conflicts = F, quietly = T)
@@ -86,14 +86,18 @@ ds_some_rows_v1 <- redcap_read(
 # save data into the dat variable 
 dat=ds_some_rows_v1
 
-for( participant in consent.records.v1)
-  print(paste("Participant ",participant))
+participants <- dat%>%
+  select(test_id)%>%
+  distinct(test_id)
 
+kable(participants)
 ```
 
 ## Did mom tell us her BMI?
-  ###(Displaying participants that responded and response)
-***
+
+### (Displaying participants that responded and response)
+
+-------------------------------------------------
 ```{r echo=FALSE}
 
 
@@ -109,8 +113,10 @@ kable(momBmi)
 
 
 ## Which participant provided infant weight?
-  ###(includes instences of 3rd trimester and 2 week questionare)
-***
+
+### (includes instences of 3rd trimester and 2 week questionare)
+
+-------------------------------------------------
 
 ```{r echo=FALSE}
 
@@ -130,8 +136,10 @@ kable(iw)
 ```
 
 ## Was delivery location told by participant?
-  ###(displays both 2-week response chart and if the question was answered in either questionare)
-***
+
+### (displays both 2-week response chart and if the question was answered in either questionare)
+
+-------------------------------------------------
 
 ```{r echo=FALSE}
 
@@ -185,17 +193,25 @@ idk<-DeliveryLocation_wk%>%
   select(participant,`IDK`)%>%
   filter(IDK>0)%>%
   select(participant)
+```
 
+### participants that responded:
+
+-------------------------------------------------
+
+```{r echo=FALSE}
 #recombine variables and show distinct population 
 tm1<-dplyr::full_join(uf,NF,BWC,by="participant")
 tm2<-dplyr::full_join(idk,Other,by="participant")
-distinct(dplyr::full_join(tm1,tm2,by="participant"))
+kable(distinct(dplyr::full_join(tm1,tm2,by="participant")))
 
 ```
 
 ## do we know infant sex?
-  ###(3rd trimester questionare response, displays participants that responded)
-***
+
+###(3rd trimester questionare response, displays participants that responded)
+
+-------------------------------------------------
 
 ```{r echo=FALSE}
 
@@ -209,8 +225,9 @@ kable(infantSex3t)
 
 ```
 
-  ###(2-week questionare response, displays participants that responded)
-***
+###(2-week questionare response, displays participants that responded)
+
+-------------------------------------------------
 
 ```{r echo=FALSE}
 
@@ -223,8 +240,9 @@ kable(infantSex2wk)
 
 ```
 
-  ###(display participants that responded to the question at all)
-***
+###(display participants that responded to the question at all)
+
+-------------------------------------------------
 
 ```{r echo=FALSE}
 temp <-full_join(infantSex3t,infantSex2wk,by="participant")%>%
@@ -239,10 +257,12 @@ kable(distinct(dplyr::semi_join(babySexAns,temp)))
 ```
 
 ## Did participant undergo Breast surgery?
-  ###(3rd trimester questionare, displays only participants that responded and response)
-***
 
-```{r}
+###(3rd trimester questionare, displays only participants that responded and response)
+
+--------------------------------------------------
+
+```{r echo=FALSE}
 breastSurgury <- dat%>%
   select(test_id,redcap_event_name,mom3t_breast_surg)%>%
   arrange(test_id,redcap_event_name)%>%
