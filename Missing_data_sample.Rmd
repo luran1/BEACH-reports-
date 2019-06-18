@@ -7,7 +7,7 @@ output: html_document
 
 ##Participants that will be looked at:
 
-```{r echo=FALSE, results="hide", include=FALSE}
+```{r echo=FALSE, results="hide", include=F}
 
 library(knitr, warn.conflicts = F, quietly = T)
 library(tidyr, warn.conflicts = F, quietly = T)
@@ -36,7 +36,8 @@ desired_fields_triHU=c("mom3t_delivery_location",
                        "mom3t_breast_surg",
                        "mom3t_baby_sex",
                        "mom3t_prepreg_bmi",
-                       "infant_crc_wt_kg")
+                       "infant_crc_wt_kg",
+                       "mom3t_folic")
 # crc variables for the 2 week visit 
 desired_fields_2wkHU=c("mom2wk_delivery_date",
                        "inf2wk_delivery_location",
@@ -91,6 +92,7 @@ participants <- dat%>%
   distinct(test_id)
 
 kable(participants)
+
 ```
 
 ## Did mom tell us her BMI?
@@ -277,8 +279,22 @@ kable(breastSurgury)
 ```
 
 
+## Is mom taking folic acid?
 
+### (Responses printed of participants that answered)
 
+--------------------------------------------------
+
+```{r echo=FALSE}
+folic_acid <- dat%>%
+  select(test_id,redcap_event_name,mom3t_folic)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  select(test_id,mom3t_folic)%>%
+  filter(!is.na(mom3t_folic))%>%
+  rename(participant=test_id, "response"=mom3t_folic)
+kable(folic_acid)
+```
 
 
 
