@@ -37,6 +37,25 @@ desired_fields_triHU=c("mom3t_delivery_location",
                        "mom3t_prepreg_bmi",
                        "infant_crc_wt_kg",
                        "mom3t_folic")
+desired_fields_triHU2=c("mom3t_delivery_location",
+                        "mom3t_meds_rx_14d",
+                        "mom3t_meds_name",
+                        "mom3t_meds_length",
+                        "mom3t_insurance",
+                        "mom3t_insurance_other",
+                        "mom3t_birth_ctrl",
+                        "mom3t_birth_ctrl_other",
+                        "mom3t_preg_no_reason",
+                        "mom3t_preg_no_reason_other",
+                        "mom3t_fertility_tr",
+                        "mom3t_medical_tx_other",
+                        "mom3t_preg_insur",
+                        "mom3t_preg_insur_other",
+                        "mom3t_baby_race","mom3t_race",
+                        "mom3t_healthcare_services",
+                        "mom3t_language_other",
+                        "mom3t_country_other",
+                        "mom3t_usa_yr")
 # crc variables for the 2 week visit 
 desired_fields_2wkHU=c("mom2wk_delivery_date",
                        "inf2wk_delivery_location",
@@ -45,7 +64,7 @@ desired_fields_2wkHU=c("mom2wk_delivery_date",
                        "inf2wk_baby_weight_today")
 
 # combine desired fields and import test_id and redcap_event_name
-desired_fields_all=c(desired_fields_triHU,desired_fields_2wkHU,"test_id","redcap_event_name")
+desired_fields_all=c(desired_fields_triHU2,desired_fields_2wkHU,"test_id","redcap_event_name")
 
 # events to retain
 #exportEvents(rcon)
@@ -79,6 +98,7 @@ ds_some_rows_v1 <- redcap_read(
   events     = events_to_retain,
   )$data
 
+head(ds_some_rows_v1)
 ```
 
 
@@ -135,5 +155,127 @@ idk<-DeliveryLocation_wk%>%
   select(participant,`IDK`)%>%
   filter(IDK>0)%>%
   select(participant)
+
+```
+
+```{r}
+#function for dynamic questions(Work in progress):
+
+#test input
+isAnswer(mom3t_insurance___1,mom3t_insurance___5,"Private health insurance","Medicaid","Some other kind of health insurance","I did not have any health insurance during the <i>month before</i> I got pregnant","IDK")
+
+
+#function
+
+# isAnswer<- function(x,a,b,c,d,e){
+#   dynamic_variable <-ds_some_rows_v1%>%
+#     select(test_id,redcap_event_name,x)%>%
+#     arrange(test_id,redcap_event_name)%>%
+#     filter(redcap_event_name="third_trimester_arm_1")
+#   name<-c(a,b,c,d,e)
+#   for(value in x){
+#   dynamic_variable<-rename(name[value]=value)
+# }
+#   
+#   dynamic_variable<-rename(participant=test_id,"visit type"=redcap_event_name)
+#   
+# one<-DeliveryLocation_wk%>%
+#   select(participant,a)%>%
+#   filter(a>0)%>%
+#   select(participant)
+# 
+# two<-DeliveryLocation_wk%>%
+#   select(participant,b)%>%
+#   filter(b>0)%>%
+#   select(participant)
+# 
+# three<-DeliveryLocation_wk%>%
+#   select(participant,c)%>%
+#   filter(c>0)%>%
+#   select(participant)
+# 
+# four<-DeliveryLocation_wk%>%
+#   select(participant,d)%>%
+#   filter(d>0)%>%
+#   select(participant)
+# 
+# five<-DeliveryLocation_wk%>%
+#   select(participant,e)%>%
+#   filter(e>0)%>%
+#   select(participant)
+#   
+# tm1<-dplyr::full_join(one,two,three,by="participant")
+# tm2<-dplyr::full_join(four, five,by="participant")
+# kable(distinct(dplyr::full_join(tm1,tm2,by="participant")))
+# }
+
+```
+
+
+## insurance responses from participants
+
+###displays participants that responded to the question
+
+```{r}
+#chart of Delivery location question at 3rd trimester   
+insurance <-ds_some_rows_v1%>%
+  select(test_id,redcap_event_name,mom3t_insurance___1:mom3t_insurance___5)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  rename("Private health insurance"=mom3t_insurance___1,
+         "Medicaid"=mom3t_insurance___2,
+         "Some other kind of health insurance"=mom3t_insurance___3,
+         "I did not have any health insurance during the <i>month before</i> I got pregnant"=mom3t_insurance___4,
+         "IDK"=mom3t_insurance___5)%>%
+  rename(participant=test_id,"visit type"=redcap_event_name)
+kable(DeliveryLocation_tri)
+#seperate variables and check for population 
+one<-DeliveryLocation_wk%>%
+  select(participant,UFHealth)%>%
+  filter(UFHealth>0)%>%
+  select(participant)
+
+two<-DeliveryLocation_wk%>%
+  select(participant,`North Florida Regional`)%>%
+  filter(`North Florida Regional`>0)%>%
+  select(participant)
+
+three<-DeliveryLocation_wk%>%
+  select(participant,`Birth & wellness Center of Gainesville`)%>%
+  filter(`Birth & wellness Center of Gainesville`>0)%>%
+  select(participant)
+
+four<-DeliveryLocation_wk%>%
+  select(participant,`other`)%>%
+  filter(other>0)%>%
+  select(participant)
+
+five<-DeliveryLocation_wk%>%
+  select(participant,`IDK`)%>%
+  filter(IDK>0)%>%
+  select(participant)
+
+tm1<-dplyr::full_join(one,two,three,by="participant")
+tm2<-dplyr::full_join(four, five,by="participant")
+kable(distinct(dplyr::full_join(tm1,tm2,by="participant")))
+```
+
+
+### participants that didn't respond
+```{r}
+apple<-full_join(tm1,tm2,by="participant")%>%
+  select(participant)%>%
+  rename(test_id=participant)
+  
+kable(apple)
+part<-ds_some_rows_v1%>%
+  select(test_id)%>%
+  distinct(test_id)
+kable(part)
+#isn't working as function intents.
+#can't findout why setdiff() isn't working.
+distinct<-setdiff(part, apple)
+kable(distinct)
+
 
 ```
