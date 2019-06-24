@@ -36,7 +36,8 @@ desired_fields_triHU=c("mom3t_delivery_location",
                        "mom3t_baby_sex",
                        "mom3t_prepreg_bmi",
                        "infant_crc_wt_kg",
-                       "mom3t_folic")
+                       "mom3t_folic",
+                       "mom3t_stop_preg")
 desired_fields_triHU2=c("mom3t_delivery_location",
                         "mom3t_meds_rx_14d",
                         "mom3t_meds_name",
@@ -228,7 +229,7 @@ insurance <-ds_some_rows_v1%>%
          "I did not have any health insurance during the <i>month before</i> I got pregnant"=mom3t_insurance___4,
          "IDK"=mom3t_insurance___5)%>%
   rename(participant=test_id,"visit type"=redcap_event_name)
-kable(DeliveryLocation_tri)
+kable(insurance)
 #seperate variables and check for population 
 one<-DeliveryLocation_wk%>%
   select(participant,UFHealth)%>%
@@ -277,5 +278,157 @@ kable(part)
 distinct<-setdiff(part, apple)
 kable(distinct)
 
+
+```
+
+## Did participant that were trying to keep from geting pregnant respond to how?
+
+```{r}
+
+
+birthControl <-ds_some_rows_v1%>%
+  select(test_id,redcap_event_name,mom3t_stop_preg,mom3t_birth_ctrl___1:mom3t_birth_ctrl___10)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  filter(mom3t_stop_preg == 3)%>%
+  rename("Birth Control Pill"=mom3t_birth_ctrl___1,
+         "Condoms"=mom3t_birth_ctrl___2,
+         "Injection(Depo-Provera)"=mom3t_birth_ctrl___3,
+         "Contraceptive implant(Implanon)"=mom3t_birth_ctrl___4,
+         "Patch(OrthoEvra)"=mom3t_birth_ctrl___5,
+         "Vaginal ring(NuvaRing)"=mom3t_birth_ctrl___6,"IUD (Including Mirena or Paraguard)"=mom3t_birth_ctrl___7,"Natural family planning(including rythm method)"=mom3t_birth_ctrl___8,"Withdrawal(pulling out)"=mom3t_birth_ctrl___9,"Other"=mom3t_birth_ctrl___10)%>%
+  rename(participant=test_id,"visit type"=redcap_event_name)
+#seperate variables and check for population 
+one<-birthControl%>%
+  select(participant,"Birth Control Pill")%>%
+  filter("Birth control pill">0)%>%
+  select(participant)
+
+two<-birthControl%>%
+  select(participant,`Condoms`)%>%
+  filter(`Condoms`>0)%>%
+  select(participant)
+
+three<-birthControl%>%
+  select(participant,`Injection(Depo-Provera)`)%>%
+  filter(`Injection(Depo-Provera)`>0)%>%
+  select(participant)
+
+four<-birthControl%>%
+  select(participant,`Contraceptive implant(Implanon)`)%>%
+  filter('Contraceptive implant(Implanon)'>0)%>%
+  select(participant)
+
+five<-birthControl%>%
+  select(participant,`Patch(OrthoEvra)`)%>%
+  filter(`Patch(OrthoEvra)`>0)%>%
+  select(participant)
+
+six<-birthControl%>%
+  select(participant,`Vaginal ring(NuvaRing)`)%>%
+  filter(`Vaginal ring(NuvaRing)`>0)%>%
+  select(participant)
+
+seven<-birthControl%>%
+  select(participant,`IUD (Including Mirena or Paraguard)`)%>%
+  filter(`IUD (Including Mirena or Paraguard)`>0)%>%
+  select(participant)
+
+eight<-birthControl%>%
+  select(participant,`Natural family planning(including rythm method)`)%>%
+  filter(`Natural family planning(including rythm method)`>0)%>%
+  select(participant)
+
+nine<-birthControl%>%
+  select(participant,`Withdrawal(pulling out)`)%>%
+  filter(`Withdrawal(pulling out)`>0)%>%
+  select(participant)
+
+ten<-birthControl%>%
+  select(participant,`Other`)%>%
+  filter(`Other`>0)%>%
+  select(participant)
+
+
+tm1<-dplyr::full_join(one,two,three,by="participant")
+tm2<-dplyr::full_join(four, five,six,by="participant")
+tm3<-dplyr::full_join(seven,eight,nine,by="participant")
+tm4<-dplyr::full_join(tm3,ten,by="participant")
+kable(distinct(dplyr::full_join(tm1,tm2,tm4,by="participant")))
+
+```
+
+### Were there any participants that did repond to the birth Control question.
+
+```{r}
+apple<-full_join(tm1,tm2,tm4,by="participant")%>%
+  select(participant)%>%
+  rename(test_id=participant)
+  
+kable(apple)
+part<-ds_some_rows_v1%>%
+  select(test_id)%>%
+  distinct(test_id)
+kable(part)
+#setdiff() working, still not working with insurance.
+distinct<-setdiff(part, apple)
+kable(distinct)
+```
+
+```{r}
+#variable mom3t_stop_no_preg not being read in 
+
+birthControl <-ds_some_rows_v1%>%
+  select(test_id,redcap_event_name,mom3t_preg_no_reason___1:mom3t_preg_no_reason___7)%>%
+  arrange(test_id,redcap_event_name)%>%
+  filter(redcap_event_name=="third_trimester_arm_1")%>%
+  rename("I did not mind if I got pregnant"=mom3t_preg_no_reason___1,
+         "I got side effects from the birth control method I was using"=mom3t_preg_no_reason___2,
+         "I had problems getting birth control"=mom3t_preg_no_reason___3,
+         "I thought my partner was sterile"=mom3t_preg_no_reason___4,
+         "My partner did not want to use anything"=mom3t_preg_no_reason___5,
+         "I forgot to use a birth control method"=mom3t_preg_no_reason___6,"other"=mom3t_preg_no_reason___7)%>%
+  rename(participant=test_id,"visit type"=redcap_event_name)
+
+#seperate variables and check for population 
+one<-birthControl%>%
+  select(participant,"I did not mind if I got pregnant")%>%
+  filter("I did not mind if I got pregnant">0)%>%
+  select(participant)
+
+two<-birthControl%>%
+  select(participant,"I got side effects from the birth control method I was using")%>%
+  filter("I got side effects from the birth control method I was using">0)%>%
+  select(participant)
+
+three<-birthControl%>%
+  select(participant,"I had problems getting birth control")%>%
+  filter("I had problems getting birth control">0)%>%
+  select(participant)
+
+four<-birthControl%>%
+  select(participant,"I thought my partner was sterile")%>%
+  filter("I thought my partner was sterile">0)%>%
+  select(participant)
+
+five<-birthControl%>%
+  select(participant,"My partner did not want to use anything")%>%
+  filter("My partner did not want to use anything">0)%>%
+  select(participant)
+
+six<-birthControl%>%
+  select(participant,"I forgot to use a birth control method")%>%
+  filter("I forgot to use a birth control method">0)%>%
+  select(participant)
+
+seven<-birthControl%>%
+  select(participant,"other")%>%
+  filter("other">0)%>%
+  select(participant)
+
+tm1<-dplyr::full_join(one,two,three,by="participant")
+tm2<-dplyr::full_join(four, five,six,by="participant")
+tm3<-dplyr::full_join(tm2,seven,by="participant")
+kable(distinct(dplyr::full_join(tm1,tm2,tm3,by="participant")))
 
 ```
